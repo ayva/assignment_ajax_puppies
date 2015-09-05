@@ -10,13 +10,23 @@ var Puppyshelter = {
     url: sample.url;
   },
 
-
+  form: $("#form"),
   breeds: [],
 
-  buildForm: function(){
-    for(var i=0; i<breeds.length; i++){
-      $('select').append('<option value="'+breeds[i]+'">'+breeds[i]+'</option>')  
-    }
+  buildForm: function(){ 
+    $.ajax({
+    type: 'GET',
+    url: 'https://pacific-stream-9205.herokuapp.com/breeds.json',
+    dataType: 'json',
+    success: function(json){ 
+      breeds = json;
+      
+      for(var i=0; i<breeds.length; i++){
+        $('select').append('<option value="'+breeds[i].name+'">'+breeds[i].name+'</option>')  
+      }
+      }   
+    })
+
   },
 
   // buildPuppies: function(json){
@@ -38,7 +48,7 @@ var Puppyshelter = {
         dataType: 'json',
         success: function(json){
             //Puppyshelter.buildPuppies(json);
-            console.log(json)
+           // console.log(json)
             for(var i=0; i<json.length; i++){
               $('#puppy-list').append('<li id="'+json[i].id+'">'+json[i].name+'('+json[i].breed.name+'). added on '+ Date.parse(json[i].created_at)+'--<a id="'+json[i].id+'" href="#">adopt</a></li> ')
             }
@@ -46,8 +56,18 @@ var Puppyshelter = {
         })
   },
 
-  addPuppy: function(sample){
-    $.post('https://pacific-stream-9205.herokuapp.com/puppies.json', {name: sample.name, breed_id: sample.id}.to_json)
+  addPuppy: function(formData){  
+    console.log(formData[0])  
+    $.ajax({
+      method: "POST",
+      url: "https://pacific-stream-9205.herokuapp.com/puppies.json",
+      data: JSON.stringify({breed_id: sample.breed, name: formData[0].name}),
+      dataType: "json",
+      contentType: "application/json",
+      headers: { 'Access-Control-Allow-Origin': 'http://localhost:3000'},
+      type: "POST",
+      async: true
+      }) 
   },
 
   removePuppy: function(id){
@@ -62,28 +82,16 @@ var Puppyshelter = {
 
   },
 
- 
-  // showList: function(){
-  //   console.log(Puppyshelter.puppies[0].name)
-  //   var pups = Puppyshelter.puppies;
-  //   var sample = undefined;
-  //   for(var i=0; i< pups.length; i++){
-      
-  //     $('#puppy-list').append('<li >'+pups[i].name+'('+pups[i].breeed+'). created at'+pups[i].created_at+'--</li><a href="#">adopt</a>')
-      
-  //   }
-  //},
-
-
-
 };
 
 function setEvents(){
 console.log("run events")
   $("#button").on("click", function(evt){
-    console.log("clicked button")
+    //console.log("clicked button")
     evt.preventDefault();
-    Puppyshelter.addPuppy()});
+    var formData = $("form").serializeArray();
+    console.log(formData)
+    Puppyshelter.addPuppy(formData)});
 
   $('body').on("click", "a", function(evt){
     console.log("clicked adopt")
@@ -98,7 +106,9 @@ console.log("run events")
 }
 $(document).ready(function(){
     Puppyshelter.getPuppies();
+    Puppyshelter.buildForm();
     setEvents();
+
 
 });
 
