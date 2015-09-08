@@ -1,5 +1,4 @@
-//Adding breeds from the list
-//https://pacific-stream-9205.herokuapp.com/puppies.json
+
 var Puppyshelter = {
 
   puppy: function(sample){
@@ -19,27 +18,22 @@ var Puppyshelter = {
     url: 'https://pacific-stream-9205.herokuapp.com/breeds.json',
     dataType: 'json',
     success: function(json){ 
-      breeds = json;
-      
-      for(var i=0; i<breeds.length; i++){
-        $('select').append('<option value="'+breeds[i].name+'">'+breeds[i].name+'</option>')  
+      Puppyshelter.breeds = json;
+      console.log(Puppyshelter.breeds[1])
+      for(var i=0; i<Puppyshelter.breeds.length; i++){
+        $('select').append('<option value="'+Puppyshelter.breeds[i].name+'">'+Puppyshelter.breeds[i].name+'</option>')  
       }
       }   
     })
 
   },
 
-  // buildPuppies: function(json){
-  //   // var text = json.responseText
-  //   //var textParsed = json  //JSON.parse(text);
-
-  //   for(var i=0; i<json.length; i++){
-  //     console.log(json[i].name)
-  //     Puppyshelter.puppies.push(new Puppyshelter.puppy(json[i]))
-  //   }
-    
-  //   Puppyshelter.showList();
-  // },
+  findBreedId: function(breedName){
+      for(var i=0; i<Puppyshelter.breeds.length; i++){
+        if (Puppyshelter.breeds[i].name === breedName) {return Puppyshelter.breeds[i].id;}
+      }
+      return "no breed found";
+  },
 
   getPuppies: function(){
     $.ajax({
@@ -47,21 +41,32 @@ var Puppyshelter = {
         url: 'https://pacific-stream-9205.herokuapp.com/puppies.json',
         dataType: 'json',
         success: function(json){
-            //Puppyshelter.buildPuppies(json);
-           // console.log(json)
-            for(var i=0; i<json.length; i++){
+            for(var i=json.length-1; i>=0; i--){
               $('#puppy-list').append('<li id="'+json[i].id+'">'+json[i].name+'('+json[i].breed.name+'). added on '+ Date.parse(json[i].created_at)+'--<a id="'+json[i].id+'" href="#">adopt</a></li> ')
             }
           }   
         })
   },
 
-  addPuppy: function(formData){  
-    console.log(formData[0])  
+  appendPuppy: function(){
+    $.ajax({
+        type: 'GET',
+        url: 'https://pacific-stream-9205.herokuapp.com/puppies.json',
+        dataType: 'json',
+        success: function(json){
+            var i=json.length-1
+              $('#puppy-list').prepend('<li id="'+json[i].id+'">'+json[i].name+'('+json[i].breed.name+'). added on '+ Date.parse(json[i].created_at)+'--<a class="adopt" id="'+json[i].id+'" href="#">adopt</a></li> ')
+            
+          }   
+        })
+  },
+
+  addPuppy: function(puppyName, breedId){  
+    
     $.ajax({
       method: "POST",
       url: "https://pacific-stream-9205.herokuapp.com/puppies.json",
-      data: JSON.stringify({breed_id: sample.breed, name: formData[0].name}),
+      data: JSON.stringify({breed_id: breedId, name: puppyName}),
       dataType: "json",
       contentType: "application/json",
       headers: { 'Access-Control-Allow-Origin': 'http://localhost:3000'},
@@ -85,23 +90,33 @@ var Puppyshelter = {
 };
 
 function setEvents(){
-console.log("run events")
-  $("#button").on("click", function(evt){
-    //console.log("clicked button")
-    evt.preventDefault();
-    var formData = $("form").serializeArray();
-    console.log(formData)
-    Puppyshelter.addPuppy(formData)});
 
-  $('body').on("click", "a", function(evt){
-    console.log("clicked adopt")
+  $("#button").on("click", function(evt){
     evt.preventDefault();
-    console.log($(this))
+    //$("form").serializeArray(); doesn't work for dropdown
+    var PuppyName = $("#name").val();
+    
+    var PuppyBreed = $("#breed").val();
+    
+    var breedId = Puppyshelter.findBreedId(PuppyBreed);
+
+    Puppyshelter.addPuppy(PuppyName, breedId);
+    Puppyshelter.appendPuppy();}
+    );
+
+  $('body').on("click", ".adopt", function(evt){
+    evt.preventDefault();
     var puppy_id = $(this).attr("id")
     //$($(this)[0].parentElement).attr("id")
     Puppyshelter.removePuppy(puppy_id);
 
+  });
+
+  $('body').on("click", "#refresh-list", function(evt){
+    $('#puppy-list').children().remove();
+    Puppyshelter.getPuppies();
   })
+
   
 }
 $(document).ready(function(){
